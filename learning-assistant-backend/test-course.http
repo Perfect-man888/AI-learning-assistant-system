@@ -1,0 +1,27 @@
+### 教师创建课程
+POST http://localhost:8080/api/courses/create
+Content-Type: application/json
+
+{
+  "courseName": "概率论与数理统计",
+  "description": "面向软件2301班的概率论课程",
+  "teacherId": 1
+}
+
+### 查看全部课程
+GET http://localhost:8080/api/courses/list
+
+### 查看教师课程
+GET http://localhost:8080/api/courses/teacher/1
+
+### 学生加入课程
+POST http://localhost:8080/api/courses/join
+Content-Type: application/json
+
+{
+  "courseId": 1,
+  "studentId": 2
+}
+
+### 学生查看我的课程
+GET http://localhost:8080/api/courses/my/2

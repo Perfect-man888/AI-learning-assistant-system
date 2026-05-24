@@ -1,0 +1,41 @@
+### 教师注册
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "teacher001",
+  "password": "123456",
+  "realName": "王老师",
+  "role": "teacher",
+  "className": "软件2301班"
+}
+
+### 学生注册
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "student001",
+  "password": "123456",
+  "realName": "张三",
+  "role": "student",
+  "className": "软件2301班"
+}
+
+### 教师登录
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "teacher001",
+  "password": "123456"
+}
+
+### 学生登录
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "student001",
+  "password": "123456"
+}
