@@ -70,10 +70,44 @@ public class StudentCourseDetailView extends BorderPane {
 
         Button enterChapterButton = new Button("进入选中章节");
         Button refreshButton = new Button("刷新章节");
+
+        Button quizButton = new Button("课程测验");
+        Button wrongBookButton = new Button("错题本");
+        Button reviewButton = new Button("个性化复习");
+        Button reportButton = new Button("学习报告");
+
         Button backButton = new Button("返回我的课程");
+
+        enterChapterButton.setMinWidth(120);
+        refreshButton.setMinWidth(120);
+        quizButton.setMinWidth(120);
+        wrongBookButton.setMinWidth(120);
+        reviewButton.setMinWidth(120);
+        reportButton.setMinWidth(120);
+        backButton.setMinWidth(120);
 
         enterChapterButton.setOnAction(e -> enterSelectedChapter());
         refreshButton.setOnAction(e -> loadChapters());
+
+        quizButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new StudentQuizView(courseId, courseName).getView());
+        });
+
+        wrongBookButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new StudentWrongBookView(courseId, courseName).getView());
+        });
+
+        reviewButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new StudentWrongBookView(courseId, courseName).getView());
+        });
+
+        reportButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new StudentLearningReportView(courseId, courseName).getView());
+        });
 
         backButton.setOnAction(e -> {
             if (onBack != null) {
@@ -84,12 +118,15 @@ public class StudentCourseDetailView extends BorderPane {
             }
         });
 
-        HBox buttonBox = new HBox(15, enterChapterButton, refreshButton, backButton);
-        buttonBox.setAlignment(Pos.CENTER);
+        HBox buttonBox1 = new HBox(15, enterChapterButton, refreshButton, backButton);
+        buttonBox1.setAlignment(Pos.CENTER);
+
+        HBox buttonBox2 = new HBox(15, quizButton, wrongBookButton, reviewButton, reportButton);
+        buttonBox2.setAlignment(Pos.CENTER);
 
         messageLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: green;");
 
-        VBox centerBox = new VBox(15, listTitle, chapterListView, buttonBox, messageLabel);
+        VBox centerBox = new VBox(15, listTitle, chapterListView, buttonBox1, buttonBox2, messageLabel);
         centerBox.setPadding(new Insets(10));
 
         setCenter(centerBox);

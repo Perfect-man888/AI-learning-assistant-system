@@ -1,6 +1,5 @@
 package com.scms.learningassistantclient.view;
 
-import com.scms.learningassistantclient.HelloApplication;
 import com.scms.learningassistantclient.api.AnswerApi;
 import com.scms.learningassistantclient.api.QuestionApi;
 import com.scms.learningassistantclient.api.TaskApi;
@@ -14,6 +13,7 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -31,8 +31,10 @@ public class StudentQuizView {
     private final TaskApi taskApi = new TaskApi();
     private final AnswerApi answerApi = new AnswerApi();
 
-    private final TextField courseIdField = new TextField("2");
-    private final TextField taskIdField = new TextField("1");
+    private final Long courseId;
+    private final String courseName;
+
+    private final TextField taskIdField = new TextField();
 
     private final ListView<Question> questionListView = new ListView<>();
     private final Label questionDetailLabel = new Label("请选择一道题目");
@@ -43,8 +45,11 @@ public class StudentQuizView {
     private Question selectedQuestion;
     private long questionStartMillis = System.currentTimeMillis();
 
-    public StudentQuizView() {
+    public StudentQuizView(Long courseId, String courseName) {
+        this.courseId = courseId;
+        this.courseName = courseName;
         createView();
+        loadTasks();
     }
 
     private void createView() {
@@ -60,8 +65,8 @@ public class StudentQuizView {
         Label titleLabel = new Label("学生端 - 任务测验答题");
         titleLabel.setFont(new Font(26));
 
-        courseIdField.setPromptText("课程ID");
-        courseIdField.setMaxWidth(220);
+        Label courseLabel = new Label("当前课程：" + courseName + " / 课程ID：" + courseId);
+        courseLabel.setStyle("-fx-font-size: 16px;");
 
         taskIdField.setPromptText("任务ID");
         taskIdField.setMaxWidth(220);
@@ -69,7 +74,7 @@ public class StudentQuizView {
         Button loadTasksButton = new Button("查询课程任务");
         Button loadQuestionsButton = new Button("查询任务题目");
         Button submitButton = new Button("提交答案");
-        Button backButton = new Button("返回学生首页");
+        Button backButton = new Button("返回课程学习");
 
         loadTasksButton.setMinWidth(120);
         loadQuestionsButton.setMinWidth(120);
@@ -77,7 +82,6 @@ public class StudentQuizView {
         backButton.setMinWidth(120);
 
         HBox inputBox = new HBox(12,
-                new Label("课程ID："), courseIdField,
                 new Label("任务ID："), taskIdField
         );
         inputBox.setAlignment(Pos.CENTER);
@@ -141,10 +145,19 @@ public class StudentQuizView {
         loadTasksButton.setOnAction(e -> loadTasks());
         loadQuestionsButton.setOnAction(e -> loadQuestions());
         submitButton.setOnAction(e -> submitAnswer());
-        backButton.setOnAction(e -> HelloApplication.showStudentHomeView());
+
+        backButton.setOnAction(e -> {
+            Scene currentScene = root.getScene();
+            currentScene.setRoot(new StudentCourseDetailView(
+                    courseId,
+                    courseName,
+                    () -> currentScene.setRoot(new StudentCourseView().getView())
+            ));
+        });
 
         root.getChildren().addAll(
                 titleLabel,
+                courseLabel,
                 inputBox,
                 buttonBox,
                 new Label("题目列表："),
@@ -154,13 +167,11 @@ public class StudentQuizView {
                 answerBoxArea,
                 messageLabel
         );
-
-        loadQuestions();
     }
 
     private void loadTasks() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
         if (courseId == null) {
+            setMessage("课程ID为空，无法查询课程任务", "red");
             return;
         }
 
@@ -172,7 +183,9 @@ public class StudentQuizView {
 
                 Platform.runLater(() -> {
                     if (tasks == null || tasks.isEmpty()) {
-                        setMessage("当前课程暂无任务", "red");
+                        setMessage("当前课程暂无任务，请教师先发布测验任务", "red");
+                        questionListView.setItems(FXCollections.observableArrayList());
+                        questionDetailLabel.setText("当前课程暂无任务");
                         return;
                     }
 

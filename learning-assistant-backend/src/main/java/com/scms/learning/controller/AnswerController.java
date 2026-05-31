@@ -9,6 +9,8 @@ import com.scms.learning.mapper.QuestionMapper;
 import com.scms.learning.mapper.WrongQuestionMapper;
 import org.springframework.web.bind.annotation.*;
 import com.scms.learning.vo.AnswerRecordDetailVO;
+import com.scms.learning.entity.LearningTask;
+import com.scms.learning.mapper.LearningTaskMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,15 +23,18 @@ public class AnswerController {
     private final AnswerRecordMapper answerRecordMapper;
     private final QuestionMapper questionMapper;
     private final WrongQuestionMapper wrongQuestionMapper;
+    private final LearningTaskMapper learningTaskMapper;
 
     public AnswerController(
             AnswerRecordMapper answerRecordMapper,
             QuestionMapper questionMapper,
-            WrongQuestionMapper wrongQuestionMapper
+            WrongQuestionMapper wrongQuestionMapper,
+            LearningTaskMapper learningTaskMapper
     ) {
         this.answerRecordMapper = answerRecordMapper;
         this.questionMapper = questionMapper;
         this.wrongQuestionMapper = wrongQuestionMapper;
+        this.learningTaskMapper = learningTaskMapper;
     }
 
     @GetMapping("/task/{taskId}/detail")
@@ -116,7 +121,11 @@ public class AnswerController {
         }
 
         if (correct) {
+            // 1. 如果是原错题再次答对，按 question_id 标记为已掌握
             markWrongQuestionMasteredIfExists(record, question);
+
+            // 2. 如果是 AI 个性化复习任务答对，则按知识点标记相关错题为已掌握
+            markRelatedWrongQuestionsMasteredForReviewTask(record, question);
         } else {
             saveOrUpdateWrongQuestion(record, question);
         }
@@ -196,6 +205,97 @@ public class AnswerController {
                 wrongQuestionMapper.deleteById(wrongList.get(i).getId());
             }
         }
+    }
+
+    /**
+     * 如果学生答对的是 review 类型复习任务中的题目，
+     * 则根据该题知识点，把错题本中同课程、同知识点的未掌握错题标记为已掌握。
+     */
+    private void markRelatedWrongQuestionsMasteredForReviewTask(AnswerRecord record, Question question) {
+        if (record == null || question == null) {
+            return;
+        }
+
+        if (record.getTaskId() == null
+                || record.getStudentId() == null
+                || question.getCourseId() == null) {
+            return;
+        }
+
+        if (!isReviewTask(record.getTaskId())) {
+            return;
+        }
+
+        String questionKnowledgePoint = question.getKnowledgePoint();
+
+        if (questionKnowledgePoint == null || questionKnowledgePoint.trim().isEmpty()) {
+            return;
+        }
+
+        LambdaQueryWrapper<WrongQuestion> wrapper = new LambdaQueryWrapper<>();
+
+        wrapper.eq(WrongQuestion::getStudentId, record.getStudentId())
+                .eq(WrongQuestion::getCourseId, question.getCourseId())
+                .eq(WrongQuestion::getIsMastered, 0)
+                .orderByDesc(WrongQuestion::getLastWrongTime)
+                .orderByDesc(WrongQuestion::getId);
+
+        List<WrongQuestion> wrongList = wrongQuestionMapper.selectList(wrapper);
+
+        if (wrongList == null || wrongList.isEmpty()) {
+            return;
+        }
+
+        int updateCount = 0;
+
+        for (WrongQuestion wrongQuestion : wrongList) {
+            if (wrongQuestion == null) {
+                continue;
+            }
+
+            String wrongKnowledgePoint = wrongQuestion.getKnowledgePointName();
+
+            if (!sameKnowledgePoint(questionKnowledgePoint, wrongKnowledgePoint)) {
+                continue;
+            }
+
+            wrongQuestion.setIsMastered(1);
+            wrongQuestion.setUpdateTime(LocalDateTime.now());
+
+            wrongQuestionMapper.updateById(wrongQuestion);
+            updateCount++;
+        }
+
+        System.out.println("AI复习任务答对后，自动标记同知识点错题为已掌握，数量：" + updateCount);
+    }
+
+    private boolean isReviewTask(Long taskId) {
+        if (taskId == null) {
+            return false;
+        }
+
+        LearningTask task = learningTaskMapper.selectById(taskId);
+
+        if (task == null || task.getTaskType() == null) {
+            return false;
+        }
+
+        return "review".equalsIgnoreCase(task.getTaskType().trim());
+    }
+
+    private boolean sameKnowledgePoint(String questionKnowledgePoint, String wrongKnowledgePoint) {
+        if (questionKnowledgePoint == null || wrongKnowledgePoint == null) {
+            return false;
+        }
+
+        String q = questionKnowledgePoint.trim();
+        String w = wrongKnowledgePoint.trim();
+
+        if (q.isEmpty() || w.isEmpty()) {
+            return false;
+        }
+
+        return q.equals(w) || q.contains(w) || w.contains(q);
     }
 
     @GetMapping("/student/{studentId}")

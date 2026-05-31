@@ -6,26 +6,37 @@ public class Result<T> {
     private String message;
     private T data;
 
-    public static <T> Result<T> success(T data) {
-        Result<T> result = new Result<>();
-        result.code = 200;
-        result.message = "操作成功";
-        result.data = data;
-        return result;
+    public Result() {
+    }
+
+    public Result(Integer code, String message, T data) {
+        this.code = code;
+        this.message = message;
+        this.data = data;
     }
 
     public static <T> Result<T> success() {
-        Result<T> result = new Result<>();
-        result.code = 200;
-        result.message = "操作成功";
-        return result;
+        return new Result<>(200, "操作成功", null);
+    }
+
+    public static <T> Result<T> success(T data) {
+        return new Result<>(200, "操作成功", data);
+    }
+
+    public static <T> Result<T> success(String message, T data) {
+        return new Result<>(200, message, data);
     }
 
     public static <T> Result<T> fail(String message) {
-        Result<T> result = new Result<>();
-        result.code = 500;
-        result.message = message;
-        return result;
+        return new Result<>(500, message, null);
+    }
+
+    public static <T> Result<T> fail(Integer code, String message) {
+        return new Result<>(code, message, null);
+    }
+
+    public static <T> Result<T> fail(Integer code, String message, T data) {
+        return new Result<>(code, message, data);
     }
 
     public Integer getCode() {

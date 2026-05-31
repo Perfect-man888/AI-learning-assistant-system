@@ -25,7 +25,8 @@ public class TeacherClassReportView {
 
     private final ClassReportApi classReportApi = new ClassReportApi();
 
-    private final TextField courseIdField = new TextField("2");
+    private final Long courseId;
+    private final String courseName;
 
     private final Label overviewLabel = new Label("暂无班级概览");
     private final Label weakPointLabel = new Label("暂无薄弱知识点");
@@ -34,8 +35,11 @@ public class TeacherClassReportView {
     private final ListView<ClassStudentReport> studentListView = new ListView<>();
     private final Label messageLabel = new Label();
 
-    public TeacherClassReportView() {
+    public TeacherClassReportView(Long courseId, String courseName) {
+        this.courseId = courseId;
+        this.courseName = courseName;
         createView();
+        loadClassReport();
     }
 
     private void createView() {
@@ -51,8 +55,8 @@ public class TeacherClassReportView {
         Label titleLabel = new Label("教师端 - 班级综合学习报告");
         titleLabel.setFont(new Font(26));
 
-        courseIdField.setPromptText("请输入课程ID，例如：2");
-        courseIdField.setMaxWidth(260);
+        Label courseLabel = new Label("当前课程：" + courseName + " / 课程ID：" + courseId);
+        courseLabel.setStyle("-fx-font-size: 16px;");
 
         Button loadButton = new Button("生成班级报告");
         Button refreshButton = new Button("刷新");
@@ -62,8 +66,7 @@ public class TeacherClassReportView {
         refreshButton.setMinWidth(90);
         backButton.setMinWidth(130);
 
-        HBox inputBox = new HBox(12, new Label("课程ID："), courseIdField);
-        inputBox.setAlignment(Pos.CENTER);
+
 
         HBox buttonBox = new HBox(12, loadButton, refreshButton, backButton);
         buttonBox.setAlignment(Pos.CENTER);
@@ -104,11 +107,18 @@ public class TeacherClassReportView {
 
         loadButton.setOnAction(e -> loadClassReport());
         refreshButton.setOnAction(e -> loadClassReport());
-        backButton.setOnAction(e -> HelloApplication.showTeacherHomeView());
+        backButton.setOnAction(e -> {
+            Parent detailView = new TeacherCourseDetailView(
+                    courseId,
+                    courseName,
+                    HelloApplication::showTeacherCourseView
+            );
+            root.getScene().setRoot(detailView);
+        });
 
         root.getChildren().addAll(
                 titleLabel,
-                inputBox,
+                courseLabel,
                 buttonBox,
                 new Label("班级整体概览："),
                 overviewLabel,
@@ -121,7 +131,7 @@ public class TeacherClassReportView {
                 messageLabel
         );
 
-        loadClassReport();
+
     }
 
     private void configCard(Label label, String backgroundColor, String borderColor, int height) {
@@ -139,7 +149,6 @@ public class TeacherClassReportView {
     }
 
     private void loadClassReport() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
 
         if (courseId == null) {
             return;

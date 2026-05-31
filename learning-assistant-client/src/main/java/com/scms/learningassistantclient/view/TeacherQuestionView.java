@@ -1,10 +1,15 @@
 package com.scms.learningassistantclient.view;
 
 import com.scms.learningassistantclient.HelloApplication;
+import com.scms.learningassistantclient.api.AiQuestionApi;
 import com.scms.learningassistantclient.api.QuestionApi;
 import com.scms.learningassistantclient.api.TaskApi;
+import com.scms.learningassistantclient.api.TaskQuestionApi;
+import com.scms.learningassistantclient.model.AiGenerateQuestionRequest;
 import com.scms.learningassistantclient.model.LearningTask;
+import com.scms.learningassistantclient.model.LoginUser;
 import com.scms.learningassistantclient.model.Question;
+import com.scms.learningassistantclient.util.AppContext;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -15,10 +20,10 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
-import com.scms.learningassistantclient.api.AiQuestionApi;
-import com.scms.learningassistantclient.model.AiGenerateQuestionRequest;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class TeacherQuestionView {
 
@@ -26,10 +31,13 @@ public class TeacherQuestionView {
 
     private final QuestionApi questionApi = new QuestionApi();
     private final TaskApi taskApi = new TaskApi();
+    private final TaskQuestionApi taskQuestionApi = new TaskQuestionApi();
     private final AiQuestionApi aiQuestionApi = new AiQuestionApi();
 
-    private final TextField courseIdField = new TextField("2");
-    private final TextField chapterIdField = new TextField("3");
+    private final Long courseId;
+    private final String courseName;
+
+    private final TextField chapterIdField = new TextField("1");
     private final TextField sectionIdField = new TextField("1");
     private final TextField aiCountField = new TextField("2");
 
@@ -40,13 +48,16 @@ public class TeacherQuestionView {
     private final TextField knowledgePointField = new TextField();
     private final ComboBox<String> difficultyBox = new ComboBox<>();
 
-    private final TextField taskTitleField = new TextField("第一章函数与极限课堂测验");
+    private final TextField taskTitleField = new TextField("课堂测验");
 
     private final ListView<Question> questionListView = new ListView<>();
     private final Label messageLabel = new Label();
 
-    public TeacherQuestionView() {
+    public TeacherQuestionView(Long courseId, String courseName) {
+        this.courseId = courseId;
+        this.courseName = courseName;
         createView();
+        loadQuestions();
     }
 
     private void createView() {
@@ -57,27 +68,23 @@ public class TeacherQuestionView {
         Label titleLabel = new Label("教师端 - 测验题目管理");
         titleLabel.setFont(new Font(26));
 
-        aiCountField.setPromptText("AI生成数量");
-        aiCountField.setMaxWidth(120);
+        Label courseLabel = new Label("当前课程：" + courseName + " / 课程ID：" + courseId);
+        courseLabel.setStyle("-fx-font-size: 16px;");
 
-        GridPane formGrid = new GridPane();
-        formGrid.setHgap(12);
-        formGrid.setVgap(10);
-        formGrid.setAlignment(Pos.CENTER);
-        formGrid.add(new Label("AI数量："), 0, 5);
-        formGrid.add(aiCountField, 1, 5);
-
-        courseIdField.setPromptText("课程ID");
         chapterIdField.setPromptText("章节ID");
         sectionIdField.setPromptText("小节ID");
+        aiCountField.setPromptText("AI生成数量");
+        aiCountField.setMaxWidth(120);
 
         questionTextArea.setPromptText("请输入题目内容，例如：函数的概念主要研究什么？");
         questionTextArea.setPrefRowCount(2);
         questionTextArea.setPrefWidth(520);
+        questionTextArea.setWrapText(true);
 
         optionsArea.setPromptText("请输入选项，例如：\nA. 变量之间的对应关系\nB. 随机事件的概率\nC. 矩阵的运算\nD. 导数的几何意义");
         optionsArea.setPrefRowCount(5);
         optionsArea.setPrefWidth(520);
+        optionsArea.setWrapText(true);
 
         answerBox.getItems().addAll("A", "B", "C", "D");
         answerBox.setValue("A");
@@ -89,12 +96,19 @@ public class TeacherQuestionView {
 
         taskTitleField.setPrefWidth(300);
 
-        formGrid.add(new Label("课程ID："), 0, 0);
-        formGrid.add(courseIdField, 1, 0);
-        formGrid.add(new Label("章节ID："), 2, 0);
-        formGrid.add(chapterIdField, 3, 0);
-        formGrid.add(new Label("小节ID："), 4, 0);
-        formGrid.add(sectionIdField, 5, 0);
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(12);
+        formGrid.setVgap(10);
+        formGrid.setAlignment(Pos.CENTER);
+
+        formGrid.add(new Label("章节ID："), 0, 0);
+        formGrid.add(chapterIdField, 1, 0);
+
+        formGrid.add(new Label("小节ID："), 2, 0);
+        formGrid.add(sectionIdField, 3, 0);
+
+        formGrid.add(new Label("AI数量："), 4, 0);
+        formGrid.add(aiCountField, 5, 0);
 
         formGrid.add(new Label("题目内容："), 0, 1);
         formGrid.add(questionTextArea, 1, 1, 5, 1);
@@ -117,14 +131,14 @@ public class TeacherQuestionView {
         Button queryButton = new Button("查询题目");
         Button addButton = new Button("新增题目");
         Button aiGenerateButton = new Button("AI生成题目");
-        Button createTaskButton = new Button("发布测验任务");
+        Button createTaskButton = new Button("发布任务并加入题目");
         Button clearButton = new Button("清空输入");
-        Button backButton = new Button("返回教师首页");
+        Button backButton = new Button("返回课程详情");
 
         aiGenerateButton.setMinWidth(120);
         queryButton.setMinWidth(110);
         addButton.setMinWidth(110);
-        createTaskButton.setMinWidth(130);
+        createTaskButton.setMinWidth(170);
         clearButton.setMinWidth(110);
         backButton.setMinWidth(130);
 
@@ -141,6 +155,7 @@ public class TeacherQuestionView {
 
         questionListView.setPrefWidth(920);
         questionListView.setPrefHeight(320);
+        questionListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         questionListView.setCellFactory(listView -> new ListCell<>() {
             @Override
@@ -172,35 +187,61 @@ public class TeacherQuestionView {
         addButton.setOnAction(e -> addQuestion());
         createTaskButton.setOnAction(e -> createTask());
         clearButton.setOnAction(e -> clearForm());
-        backButton.setOnAction(e -> HelloApplication.showTeacherHomeView());
+
+        backButton.setOnAction(e -> {
+            Parent detailView = new TeacherCourseDetailView(
+                    courseId,
+                    courseName,
+                    HelloApplication::showTeacherCourseView
+            );
+            root.getScene().setRoot(detailView);
+        });
 
         root.getChildren().addAll(
                 titleLabel,
+                courseLabel,
                 formGrid,
                 buttonBox,
                 new Label("题目列表："),
                 questionListView,
                 messageLabel
         );
-
-        loadQuestions();
     }
 
     private void loadQuestions() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
         if (courseId == null) {
+            setMessage("课程ID为空，无法加载题目", "red");
             return;
         }
 
-        setMessage("正在加载题目...", "#333333");
+        Long chapterId = parseLong(chapterIdField.getText(), "章节ID");
+        Long sectionId = parseLong(sectionIdField.getText(), "小节ID");
+
+        if (chapterId == null || sectionId == null) {
+            return;
+        }
+
+        setMessage("正在加载当前章节/小节题目...", "#333333");
 
         new Thread(() -> {
             try {
-                List<Question> questions = questionApi.getQuestionsByCourseId(courseId);
+                List<Question> allQuestions = questionApi.getQuestionsByCourseId(courseId);
+
+                List<Question> filteredQuestions = allQuestions.stream()
+                        .filter(q -> q != null)
+                        .filter(q -> courseId.equals(q.getCourseId()))
+                        .filter(q -> chapterId.equals(q.getChapterId()))
+                        .filter(q -> sectionId.equals(q.getSectionId()))
+                        .toList();
 
                 Platform.runLater(() -> {
-                    questionListView.setItems(FXCollections.observableArrayList(questions));
-                    setMessage("题目加载成功，共 " + questions.size() + " 道题", "green");
+                    questionListView.setItems(FXCollections.observableArrayList(filteredQuestions));
+                    setMessage(
+                            "题目加载成功，当前章节ID：" + chapterId
+                                    + "，小节ID：" + sectionId
+                                    + "，共 " + filteredQuestions.size() + " 道题",
+                            "green"
+                    );
                 });
 
             } catch (Exception e) {
@@ -211,7 +252,6 @@ public class TeacherQuestionView {
     }
 
     private void addQuestion() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
         Long chapterId = parseLong(chapterIdField.getText(), "章节ID");
         Long sectionId = parseLong(sectionIdField.getText(), "小节ID");
 
@@ -271,7 +311,6 @@ public class TeacherQuestionView {
     }
 
     private void generateQuestionsByAi() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
         Long chapterId = parseLong(chapterIdField.getText(), "章节ID");
         Long sectionId = parseLong(sectionIdField.getText(), "小节ID");
 
@@ -338,9 +377,10 @@ public class TeacherQuestionView {
     }
 
     private void createTask() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
+        Long chapterId = parseLong(chapterIdField.getText(), "章节ID");
+        Long sectionId = parseLong(sectionIdField.getText(), "小节ID");
 
-        if (courseId == null) {
+        if (courseId == null || chapterId == null || sectionId == null) {
             return;
         }
 
@@ -351,26 +391,70 @@ public class TeacherQuestionView {
             return;
         }
 
+        List<Question> selectedQuestions = new ArrayList<>(
+                questionListView.getSelectionModel().getSelectedItems()
+        );
+
+        if (selectedQuestions.isEmpty()) {
+            selectedQuestions = questionListView.getItems()
+                    .stream()
+                    .filter(q -> Objects.equals(q.getCourseId(), courseId))
+                    .filter(q -> Objects.equals(q.getChapterId(), chapterId))
+                    .filter(q -> Objects.equals(q.getSectionId(), sectionId))
+                    .toList();
+        }
+
+        if (selectedQuestions.isEmpty()) {
+            setMessage("没有可加入任务的题目。请先查询/生成题目，或在题目列表中选中题目。", "red");
+            return;
+        }
+
         LearningTask task = new LearningTask();
         task.setCourseId(courseId);
-        task.setTeacherId(1L);
+        task.setChapterId(chapterId);
+        task.setSectionId(sectionId);
+
+        LoginUser currentUser = AppContext.getCurrentUser();
+        if (currentUser != null && currentUser.getId() != null) {
+            task.setTeacherId(currentUser.getId());
+        } else {
+            task.setTeacherId(1L);
+        }
+
         task.setTaskTitle(taskTitle.trim());
         task.setTaskType("quiz");
+        task.setStatus("published");
 
-        setMessage("正在发布测验任务...", "#333333");
+        setMessage("正在发布任务并绑定题目...", "#333333");
+
+        List<Question> finalSelectedQuestions = selectedQuestions;
 
         new Thread(() -> {
             try {
                 LearningTask saved = taskApi.createTask(task);
 
+                int bindCount = 0;
+
+                for (int i = 0; i < finalSelectedQuestions.size(); i++) {
+                    Question question = finalSelectedQuestions.get(i);
+
+                    if (question != null && question.getId() != null) {
+                        taskQuestionApi.addQuestionToTask(saved.getId(), question.getId(), i + 1);
+                        bindCount++;
+                    }
+                }
+
+                int finalBindCount = bindCount;
+
                 Platform.runLater(() -> setMessage(
-                        "测验任务发布成功，任务ID：" + saved.getId() + "，标题：" + saved.getTaskTitle(),
+                        "任务发布成功，任务ID：" + saved.getId()
+                                + "，已加入题目 " + finalBindCount + " 道。学生端可以开始答题。",
                         "green"
                 ));
 
             } catch (Exception e) {
                 e.printStackTrace();
-                Platform.runLater(() -> setMessage("发布测验任务失败：" + e.getMessage(), "red"));
+                Platform.runLater(() -> setMessage("发布任务或绑定题目失败：" + e.getMessage(), "red"));
             }
         }).start();
     }
@@ -410,7 +494,7 @@ public class TeacherQuestionView {
         answerBox.setValue("A");
         knowledgePointField.clear();
         difficultyBox.setValue("easy");
-        taskTitleField.setText("第一章函数与极限课堂测验");
+        taskTitleField.setText("课堂测验");
         setMessage("输入已清空", "#333333");
     }
 

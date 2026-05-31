@@ -6,6 +6,7 @@ import com.scms.learningassistantclient.util.AppContext;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -41,15 +42,33 @@ public class TeacherHomeView {
 
         Button questionButton = new Button("测验题目管理");
         questionButton.setMaxWidth(220);
-        questionButton.setOnAction(event -> HelloApplication.showTeacherQuestionView());
+        questionButton.setOnAction(event ->
+                showAlert("请先进入课程管理，选择具体课程后，再进行测验题目管理。")
+        );
 
         Button taskButton = new Button("学习任务管理");
         taskButton.setMaxWidth(220);
-        taskButton.setOnAction(event -> HelloApplication.showTeacherTaskView());
+        taskButton.setOnAction(event ->
+                showAlert("请先进入课程管理，选择具体课程后，再进行学习任务管理。")
+        );
 
         Button reportButton = new Button("学习数据报告");
         reportButton.setMaxWidth(220);
-        reportButton.setOnAction(event -> HelloApplication.showTeacherProgressView());
+        reportButton.setOnAction(event ->
+                showAlert("请先进入课程管理，选择具体课程后，再查看学习数据报告。")
+        );
+
+        Button answerStatsButton = new Button("答题统计");
+        answerStatsButton.setMaxWidth(220);
+        answerStatsButton.setOnAction(event ->
+                showAlert("请先进入课程管理，选择具体课程后，再查看答题统计。")
+        );
+
+        Button classReportButton = new Button("班级综合报告");
+        classReportButton.setMaxWidth(220);
+        classReportButton.setOnAction(event ->
+                showAlert("请先进入课程管理，选择具体课程后，再查看班级综合报告。")
+        );
 
         Button logoutButton = new Button("退出登录");
         logoutButton.setMaxWidth(220);
@@ -57,14 +76,6 @@ public class TeacherHomeView {
             AppContext.clear();
             HelloApplication.showLoginView();
         });
-
-        Button answerStatsButton = new Button("答题统计");
-        answerStatsButton.setMaxWidth(220);
-        answerStatsButton.setOnAction(event -> HelloApplication.showTeacherAnswerStatsView());
-
-        Button classReportButton = new Button("班级综合报告");
-        classReportButton.setMaxWidth(220);
-        classReportButton.setOnAction(event -> HelloApplication.showTeacherClassReportView());
 
         root.getChildren().addAll(
                 titleLabel,
@@ -77,6 +88,14 @@ public class TeacherHomeView {
                 classReportButton,
                 logoutButton
         );
+    }
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("操作提示");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     public Parent getView() {

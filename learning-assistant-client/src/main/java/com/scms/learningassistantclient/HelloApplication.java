@@ -61,37 +61,15 @@ public class HelloApplication extends Application {
         setScene(new StudentCourseView().getView(), "智能学习助手 - 学生课程中心", 900, 720);
     }
 
-    public static void showTeacherProgressView() {
-        setScene(new TeacherProgressView().getView(), "智能学习助手 - 教师学习进度统计", 900, 650);
-    }
 
-    public static void showTeacherQuestionView() {
-        setScene(new TeacherQuestionView().getView(), "教师端 - 测验题目管理", 1000, 720);
-    }
 
-    public static void showStudentQuizView() {
-        setScene(new StudentQuizView().getView(), "学生端 - 课程测验答题", 980, 720);
-    }
 
     public static void showTeacherAnswerStatsView() {
         setScene(new TeacherAnswerStatsView().getView(), "教师端 - 答题统计", 980, 720);
     }
+    
 
-    public static void showStudentWrongBookView() {
-        setScene(new StudentWrongBookView().getView(), "学生端 - 我的错题本", 980, 720);
-    }
 
-    public static void showStudentLearningReportView() {
-        setScene(new StudentLearningReportView().getView(), "学生端 - 个人学习报告", 1050, 820);
-    }
-
-    public static void showTeacherClassReportView() {
-        setScene(new TeacherClassReportView().getView(), "教师端 - 班级综合学习报告", 1050, 820);
-    }
-
-    public static void showTeacherTaskView() {
-        setScene(new TeacherTaskView().getView(), "教师端 - 测验任务管理", 980, 700);
-    }
 
     public static void showTeacherAnswerStatsView(Long taskId) {
         setScene(new TeacherAnswerStatsView(taskId).getView(), "教师端 - 答题统计", 980, 720);

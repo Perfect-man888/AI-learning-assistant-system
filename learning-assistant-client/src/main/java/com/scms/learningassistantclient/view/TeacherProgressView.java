@@ -23,12 +23,17 @@ public class TeacherProgressView {
 
     private final StudyProgressApi studyProgressApi = new StudyProgressApi();
 
+    private final Long courseId;
+    private final String courseName;
+
     private final ListView<StudentProgressSummary> progressListView = new ListView<>();
-    private final TextField courseIdField = new TextField();
     private final Label messageLabel = new Label();
 
-    public TeacherProgressView() {
+    public TeacherProgressView(Long courseId, String courseName) {
+        this.courseId = courseId;
+        this.courseName = courseName;
         createView();
+        loadProgress();
     }
 
     private void createView() {
@@ -39,13 +44,12 @@ public class TeacherProgressView {
         Label titleLabel = new Label("教师端 - 学习进度统计");
         titleLabel.setFont(new Font(26));
 
-        courseIdField.setPromptText("请输入课程ID，例如：2");
-        courseIdField.setText("2");
-        courseIdField.setMaxWidth(300);
+        Label courseLabel = new Label("当前课程：" + courseName + " / 课程ID：" + courseId);
+        courseLabel.setStyle("-fx-font-size: 16px;");
 
         Button queryButton = new Button("查询学习进度");
         Button refreshButton = new Button("刷新");
-        Button backButton = new Button("返回教师首页");
+        Button backButton = new Button("返回课程详情");
 
         queryButton.setMinWidth(120);
         refreshButton.setMinWidth(90);
@@ -85,12 +89,19 @@ public class TeacherProgressView {
 
         queryButton.setOnAction(e -> loadProgress());
         refreshButton.setOnAction(e -> loadProgress());
-        backButton.setOnAction(e -> HelloApplication.showTeacherHomeView());
+
+        backButton.setOnAction(e -> {
+            Parent detailView = new TeacherCourseDetailView(
+                    courseId,
+                    courseName,
+                    HelloApplication::showTeacherCourseView
+            );
+            root.getScene().setRoot(detailView);
+        });
 
         root.getChildren().addAll(
                 titleLabel,
-                new Label("课程ID："),
-                courseIdField,
+                courseLabel,
                 buttonBox,
                 new Label("学习进度列表："),
                 progressListView,
@@ -99,26 +110,12 @@ public class TeacherProgressView {
     }
 
     private void loadProgress() {
-        String courseIdText = courseIdField.getText();
-
-        if (courseIdText == null || courseIdText.trim().isEmpty()) {
-            messageLabel.setStyle("-fx-text-fill: red;");
-            messageLabel.setText("请输入课程ID");
+        if (courseId == null) {
+            setMessage("课程ID为空，无法查询学习进度", "red");
             return;
         }
 
-        Long courseId;
-
-        try {
-            courseId = Long.parseLong(courseIdText.trim());
-        } catch (Exception e) {
-            messageLabel.setStyle("-fx-text-fill: red;");
-            messageLabel.setText("课程ID必须是数字");
-            return;
-        }
-
-        messageLabel.setStyle("-fx-text-fill: #333333;");
-        messageLabel.setText("正在加载学习进度和小节明细...");
+        setMessage("正在加载学习进度和小节明细...", "#333333");
 
         new Thread(() -> {
             try {
@@ -150,18 +147,12 @@ public class TeacherProgressView {
                 Platform.runLater(() -> {
                     progressListView.setItems(FXCollections.observableArrayList(finalSummaries));
                     progressListView.refresh();
-
-                    messageLabel.setStyle("-fx-text-fill: green;");
-                    messageLabel.setText("学习进度加载成功，共 " + finalSummaries.size() + " 名学生");
+                    setMessage("学习进度加载成功，共 " + finalSummaries.size() + " 名学生", "green");
                 });
 
             } catch (Exception e) {
                 e.printStackTrace();
-
-                Platform.runLater(() -> {
-                    messageLabel.setStyle("-fx-text-fill: red;");
-                    messageLabel.setText("学习进度加载失败：" + e.getMessage());
-                });
+                Platform.runLater(() -> setMessage("学习进度加载失败：" + e.getMessage(), "red"));
             }
         }).start();
     }
@@ -227,6 +218,11 @@ public class TeacherProgressView {
             return "暂无";
         }
         return String.valueOf(value);
+    }
+
+    private void setMessage(String text, String color) {
+        messageLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: " + color + ";");
+        messageLabel.setText(text);
     }
 
     public Parent getView() {

@@ -23,14 +23,18 @@ public class TeacherTaskView {
 
     private final TaskApi taskApi = new TaskApi();
 
-    private final TextField courseIdField = new TextField("2");
+    private final Long courseId;
+    private final String courseName;
     private final ListView<LearningTask> taskListView = new ListView<>();
     private final Label messageLabel = new Label();
 
     private LearningTask selectedTask;
 
-    public TeacherTaskView() {
+    public TeacherTaskView(Long courseId, String courseName) {
+        this.courseId = courseId;
+        this.courseName = courseName;
         createView();
+        loadTasks();
     }
 
     private void createView() {
@@ -41,8 +45,8 @@ public class TeacherTaskView {
         Label titleLabel = new Label("教师端 - 测验任务管理");
         titleLabel.setFont(new Font(26));
 
-        courseIdField.setPromptText("请输入课程ID，例如：2");
-        courseIdField.setMaxWidth(260);
+//        courseIdField.setPromptText("请输入课程ID，例如：2");
+//        courseIdField.setMaxWidth(260);
 
         Button queryButton = new Button("查询任务");
         Button refreshButton = new Button("刷新");
@@ -56,8 +60,8 @@ public class TeacherTaskView {
         deleteButton.setMinWidth(130);
         backButton.setMinWidth(130);
 
-        HBox inputBox = new HBox(12, new Label("课程ID："), courseIdField);
-        inputBox.setAlignment(Pos.CENTER);
+        Label courseLabel = new Label("当前课程：" + courseName + " / 课程ID：" + courseId);
+        courseLabel.setStyle("-fx-font-size: 16px;");
 
         HBox buttonBox = new HBox(12, queryButton, refreshButton, statsButton, deleteButton, backButton);
         buttonBox.setAlignment(Pos.CENTER);
@@ -108,11 +112,18 @@ public class TeacherTaskView {
         refreshButton.setOnAction(e -> loadTasks());
         statsButton.setOnAction(e -> openAnswerStats());
         deleteButton.setOnAction(e -> deleteSelectedTask());
-        backButton.setOnAction(e -> HelloApplication.showTeacherHomeView());
+        backButton.setOnAction(e -> {
+            Parent detailView = new TeacherCourseDetailView(
+                    courseId,
+                    courseName,
+                    HelloApplication::showTeacherCourseView
+            );
+            root.getScene().setRoot(detailView);
+        });
 
         root.getChildren().addAll(
                 titleLabel,
-                inputBox,
+                courseLabel,
                 buttonBox,
                 new Label("测验任务列表："),
                 taskListView,
@@ -124,7 +135,6 @@ public class TeacherTaskView {
     }
 
     private void loadTasks() {
-        Long courseId = parseLong(courseIdField.getText(), "课程ID");
 
         if (courseId == null) {
             return;

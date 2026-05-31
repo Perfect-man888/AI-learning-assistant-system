@@ -62,7 +62,33 @@ public class TeacherCourseDetailView extends BorderPane {
         Button addButton = new Button("新增章节");
         Button refreshButton = new Button("刷新章节");
         Button enterChapterButton = new Button("进入选中章节");
+
+        Button questionButton = new Button("题库管理");
+        Button taskButton = new Button("测验任务");
+        Button progressButton = new Button("学习进度");
+        Button classReportButton = new Button("班级报告");
+
         Button backButton = new Button("返回课程管理");
+
+        questionButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new TeacherQuestionView(courseId, courseName).getView());
+        });
+
+        taskButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new TeacherTaskView(courseId, courseName).getView());
+        });
+
+        progressButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new TeacherProgressView(courseId, courseName).getView());
+        });
+
+        classReportButton.setOnAction(e -> {
+            Scene currentScene = this.getScene();
+            currentScene.setRoot(new TeacherClassReportView(courseId, courseName).getView());
+        });
 
         addButton.setMinWidth(110);
         refreshButton.setMinWidth(110);
@@ -85,10 +111,30 @@ public class TeacherCourseDetailView extends BorderPane {
         HBox inputFieldBox = new HBox(15, chapterTitleField, sortOrderField);
         inputFieldBox.setAlignment(Pos.CENTER);
 
-        HBox buttonBox = new HBox(15, addButton, refreshButton, enterChapterButton, backButton);
-        buttonBox.setAlignment(Pos.CENTER);
+        questionButton.setMinWidth(120);
+        taskButton.setMinWidth(120);
+        progressButton.setMinWidth(120);
+        classReportButton.setMinWidth(120);
 
-        VBox inputBox = new VBox(12, inputFieldBox, buttonBox);
+        HBox buttonBox1 = new HBox(
+                12,
+                addButton,
+                refreshButton,
+                enterChapterButton,
+                backButton
+        );
+        buttonBox1.setAlignment(Pos.CENTER);
+
+        HBox buttonBox2 = new HBox(
+                12,
+                questionButton,
+                taskButton,
+                progressButton,
+                classReportButton
+        );
+        buttonBox2.setAlignment(Pos.CENTER);
+
+        VBox inputBox = new VBox(12, inputFieldBox, buttonBox1, buttonBox2);
         inputBox.setAlignment(Pos.CENTER);
         inputBox.setPadding(new Insets(10));
 

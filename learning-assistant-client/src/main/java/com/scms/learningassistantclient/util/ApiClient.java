@@ -90,6 +90,33 @@ public class ApiClient {
         );
     }
 
+    public static String put(String url, String jsonBody) throws IOException, InterruptedException {
+        if (jsonBody == null || jsonBody.trim().isEmpty()) {
+            jsonBody = "{}";
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(buildUri(url))
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json; charset=utf-8")
+                .build();
+
+        HttpResponse<String> response = CLIENT.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
+
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            return response.body();
+        }
+
+        throw new RuntimeException(
+                "PUT 请求失败，状态码：" + response.statusCode()
+                        + "，返回内容：" + response.body()
+        );
+    }
+
     public static String delete(String url) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(buildUri(url))
